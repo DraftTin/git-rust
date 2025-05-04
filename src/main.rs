@@ -48,7 +48,7 @@ fn cat_file(args: &[String]) {
             iter.next();
             if let Some(second) = iter.next() {
                 if let Ok(s) = String::from_utf8(second.to_vec()) {
-                    println!("{}", s)
+                    print!("{}", s);
                 }
             }
         } else {
