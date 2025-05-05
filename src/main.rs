@@ -3,9 +3,13 @@ use std::env;
 #[allow(unused_imports)]
 use std::fs;
 use std::fs::read_to_string;
+use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 
 use flate2::read::ZlibDecoder;
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
 use sha1::{Digest, Sha1};
 
 fn hash_object(args: &[String]) {
@@ -24,7 +28,25 @@ fn hash_object(args: &[String]) {
             // Retrive the result
             let object_hash = hasher.finalize();
             let hex = format!("{:x}", object_hash);
-            println!("{}", hex)
+            // Compress the data
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+            encoder
+                .write_all(new_content.as_bytes())
+                .expect("Failed to compress data");
+            let compressed_data = encoder.finish();
+            match compressed_data {
+                Ok(result) => {
+                    // write the compressed data to the file
+                    let dirpath = &format!(".git/objects/{}", &hex[..2]);
+                    let filepath = &format!("{}/{}", dirpath, &hex[2..]);
+                    fs::create_dir_all(dirpath).expect("Failed to create the directory");
+                    let mut file = File::create(filepath).expect("Failed to create file");
+                    file.write_all(&result[..]).expect("Failed to write")
+                }
+                Err(e) => {
+                    println!("{}", e)
+                }
+            }
         } else {
             println!("Filename needed for hash-object")
         }
